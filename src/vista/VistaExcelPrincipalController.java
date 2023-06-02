@@ -20,6 +20,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import model.Celda;
 import model.Hoja;
+import model.MiLibreria;
 
 public class VistaExcelPrincipalController<T> implements Initializable {
 
@@ -41,9 +42,8 @@ public class VistaExcelPrincipalController<T> implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         hoja = new Hoja<>();
-//Test
+
         tblExcel.getSelectionModel().setCellSelectionEnabled(true);
-//Otro test
 
         // Crear las columnas dinámicamente
         for (char c = 'A'; c <= 'Z'; c++) {
@@ -75,34 +75,34 @@ public class VistaExcelPrincipalController<T> implements Initializable {
         }
 
         tblExcel.setEditable(true);
+        tblExcel.setOnKeyPressed(event -> {
+            if (event.getCode() == KeyCode.ENTER) {
+                ObservableList<Celda<String>> selectedRow = tblExcel.getSelectionModel().getSelectedItem();
+                int rowIndex = tblExcel.getSelectionModel().getSelectedIndex();
+                int columnIndex = tblExcel.getSelectionModel().getSelectedCells().get(0).getColumn();
 
-        tblExcel.setOnKeyPressed(new EventHandler<KeyEvent>() {
-            @Override
-            public void handle(KeyEvent event) {
-                if (event.getCode() == KeyCode.DELETE || event.getCode() == KeyCode.BACK_SPACE) {
-                    ObservableList<Celda<String>> selectedRow = tblExcel.getSelectionModel().getSelectedItem();
-                    int rowIndex = tblExcel.getSelectionModel().getSelectedIndex();
-                    int columnIndex = tblExcel.getSelectionModel().getSelectedCells().get(0).getColumn();
+                Celda<String> selectedCell = selectedRow.get(columnIndex);
+                String formula = selectedCell.getContenidoCelda();
 
-                    // Borrar contenido de la celda seleccionada
-                    selectedRow.get(columnIndex).setContenidoCelda("");
+                if (formula.startsWith("=")) {
+                    String[] tokens = formula.substring(1).split("\\(");
+                    String functionName = tokens[0].toUpperCase();
+                    String[] arguments = tokens[1].replaceAll("\\)", "").split(",");
 
-                    // Remover la fila si todas las celdas están vacías
-                    boolean isEmptyRow = true;
-                    for (Celda<String> celda : selectedRow) {
-                        if (celda.getContenidoCelda() != null && !celda.getContenidoCelda().isEmpty()) {
-                            isEmptyRow = false;
-                            break;
-                        }
+                    if (functionName.equals("SUMA") && arguments.length == 2) {
+                        double arg1 = Double.parseDouble(arguments[0]);
+                        double arg2 = Double.parseDouble(arguments[1]);
+                        double result = arg1 + arg2;
+                        selectedCell.setContenidoCelda(String.valueOf(result));
+                    } else if (functionName.equals("MULTI") && arguments.length == 2) {
+                        double arg1 = Double.parseDouble(arguments[0]);
+                        double arg2 = Double.parseDouble(arguments[1]);
+                        double result = arg1 * arg2;
+                        selectedCell.setContenidoCelda(String.valueOf(result));
                     }
-                    if (isEmptyRow) {
-                        tblExcel.getItems().remove(selectedRow);
-                    }
-
-                    // Actualizar la matriz de datos (opcional)
-                    hoja.setCelda(rowIndex, columnIndex, new Celda<>(""));
                 }
             }
-        });
-    }
+    });
+}
+
 }
